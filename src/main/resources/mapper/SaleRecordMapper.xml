@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.min9359.creator_settlement_api.mapper.SaleRecordMapper">
+
+    <insert id="insert" parameterType="com.min9359.creator_settlement_api.domain.SaleRecord">
+        INSERT INTO sale_record (id, course_id, student_id, amount, paid_at)
+        VALUES (#{id}, #{courseId}, #{studentId}, #{amount}, #{paidAt})
+    </insert>
+
+    <select id="findById" resultType="com.min9359.creator_settlement_api.domain.SaleRecord">
+        SELECT id, course_id, student_id, amount, paid_at, created_at
+        FROM sale_record
+        WHERE id = #{id}
+    </select>
+
+    <select id="findByCreatorAndPeriod" resultType="com.min9359.creator_settlement_api.domain.SaleRecord">
+        SELECT s.id, s.course_id, s.student_id, s.amount, s.paid_at, s.created_at
+        FROM sale_record s
+                 JOIN course c ON s.course_id = c.id
+        WHERE c.creator_id = #{creatorId}
+        <if test="startAt !=null">
+          AND s.paid_at &gt;= #{startAt}
+        </if>
+        <if test="endAt !=null">
+          AND s.paid_at &lt;= #{endAt}
+        </if>
+        ORDER BY s.paid_at
+    </select>
+
+</mapper>
