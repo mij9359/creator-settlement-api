@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.min9359.creator_settlement_api.mapper.SettlementMapper">
+
+    <!-- 운영자용: 기간 내 전체 집계 -->
+    <select id="aggregateAllByPeriod" resultType="com.min9359.creator_settlement_api.domain.CreatorAggregation">
+        SELECT
+            c.id   AS creator_id,
+            c.name AS creator_name,
+            COALESCE(s.total_amount, 0) AS sale_total_amount,
+            COALESCE(s.cnt, 0)          AS sale_count,
+            COALESCE(cr.total_amount, 0) AS cancel_total_amount,
+            COALESCE(cr.cnt, 0)          AS cancel_count
+        FROM creator c
+                 LEFT JOIN (
+            SELECT crs.creator_id, SUM(s.amount) AS total_amount, COUNT(*) AS cnt
+            FROM sale_record s
+                     JOIN course crs ON s.course_id = crs.id
+            WHERE s.paid_at &gt;= #{startAt} AND s.paid_at &lt; #{endAtExclusive}
+            GROUP BY crs.creator_id
+        ) s ON s.creator_id = c.id
+                 LEFT JOIN (
+            SELECT crs.creator_id, SUM(cr.refund_amount) AS total_amount, COUNT(*) AS cnt
+            FROM cancel_record cr
+                     JOIN sale_record sr ON cr.sale_record_id = sr.id
+                     JOIN course crs ON sr.course_id = crs.id
+            WHERE cr.cancelled_at &gt;= #{startAt} AND cr.cancelled_at &lt; #{endAtExclusive}
+            GROUP BY crs.creator_id
+        ) cr ON cr.creator_id = c.id
+        ORDER BY c.id
+    </select>
+
+    <!-- 정산 내역 저장 -->
+    <insert id="insertSettlement" parameterType="com.min9359.creator_settlement_api.domain.SettlementResponse"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO settlement (
+            creator_id, settlement_year_month, total_sales, total_refunds,
+            net_sales, fee_rate, fee_amount, settlement_amount,
+            sale_count, cancel_count, status
+        ) VALUES (
+                     #{creatorId}, #{yearMonth}, #{totalSales}, #{totalRefunds},
+                     #{netSales}, #{feeRate}, #{feeAmount}, #{settlementAmount},
+                     #{saleCount}, #{cancelCount}, 'PENDING'
+                 )
+    </insert>
+
+    <!-- 크리에이터/월로 중복 조회 (하나로 합침) -->
+    <select id="findSavedSettlement" resultType="com.min9359.creator_settlement_api.domain.SettlementResponse">
+        SELECT
+            id,
+            creator_id AS creatorId,
+            settlement_year_month AS yearMonth,
+            total_sales AS totalSales,
+            total_refunds AS totalRefunds,
+            net_sales AS netSales,
+            fee_rate AS feeRate,
+            fee_amount AS feeAmount,
+            settlement_amount AS settlementAmount,
+            sale_count AS saleCount,
+            cancel_count AS cancelCount,
+            status
+        FROM settlement
+        WHERE creator_id = #{creatorId} AND settlement_year_month = #{yearMonth}
+    </select>
+
+    <!-- 상태 업데이트 -->
+    <update id="updateStatus">
+        UPDATE settlement
+        SET status = #{status},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <!-- ID로 단건 조회 -->
+    <select id="findById" resultType="com.min9359.creator_settlement_api.domain.SettlementResponse">
+        SELECT
+            id,
+            creator_id AS creatorId,
+            settlement_year_month AS yearMonth,
+            total_sales AS totalSales,
+            total_refunds AS totalRefunds,
+            net_sales AS netSales,
+            fee_rate AS feeRate,
+            fee_amount AS feeAmount,
+            settlement_amount AS settlementAmount,
+            sale_count AS saleCount,
+            cancel_count AS cancelCount,
+            status
+        FROM settlement
+        WHERE id = #{id}
+    </select>
+
+</mapper>

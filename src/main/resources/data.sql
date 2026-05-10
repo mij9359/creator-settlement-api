@@ -27,3 +27,9 @@ INSERT INTO cancel_record (sale_record_id, refund_amount, cancelled_at, reason) 
                                                                                     ('sale-3', 80000, '2025-03-25 10:00:00', '전액 환불'),  -- cancel-1
                                                                                     ('sale-4', 30000, '2025-03-23 11:00:00', '부분 환불'),  -- cancel-2
                                                                                     ('sale-5', 60000, '2025-02-02 09:00:00', '월 경계 환불'); -- cancel-3 (sale-5는 1월 판매, 취소는 2월)
+-- 2025-01 정산이 이미 완료된 샘플 데이터
+INSERT INTO settlement (creator_id, settlement_year_month, total_sales, total_refunds, net_sales, fee_rate, fee_amount, settlement_amount, sale_count, cancel_count, status)
+VALUES ('creator-2', '2025-01', 60000, 0, 60000, 0.20, 12000, 48000, 1, 0, 'PAID');
+
+
+

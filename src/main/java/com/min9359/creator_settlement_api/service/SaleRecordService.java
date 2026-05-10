@@ -35,7 +35,7 @@ public class SaleRecordService {
     }
 
     public List<SaleRecord> getSalesByCreatorAndPeriod(
-            String creatorId, LocalDateTime startAt, LocalDateTime endAt) {
-        return saleRecordMapper.findByCreatorAndPeriod(creatorId, startAt, endAt);
+            String creatorId, LocalDateTime startAt, LocalDateTime endAtExclusive) {
+        return saleRecordMapper.findByCreatorAndPeriod(creatorId, startAt, endAtExclusive);
     }
 }

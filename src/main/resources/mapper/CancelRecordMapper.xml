@@ -22,4 +22,15 @@
         WHERE sale_record_id = #{saleRecordId}
     </select>
 
+    <select id="aggregateByCreatorAndPeriod" resultType="com.min9359.creator_settlement_api.domain.CancelAggregation">
+        SELECT
+            COALESCE(SUM(cr.refund_amount), 0) AS total_amount,
+            COUNT(*) AS count
+        FROM cancel_record cr
+            JOIN sale_record s ON cr.sale_record_id = s.id
+            JOIN course c ON s.course_id = c.id
+        WHERE c.creator_id = #{creatorId}
+          AND cr.cancelled_at &gt;= #{startAt}
+          AND cr.cancelled_at &lt; #{endAtExclusive}
+    </select>
 </mapper>

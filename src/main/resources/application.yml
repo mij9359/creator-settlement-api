@@ -6,6 +6,7 @@ spring:
     driver-class-name: org.h2.Driver
     username: sa
     password:
+    type: com.zaxxer.hikari.HikariDataSource
   h2:
     console:
       enabled: true
@@ -21,6 +22,24 @@ mybatis:
   mapper-locations: classpath:mapper/*.xml
   configuration:
     map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+logging:
+  level:
+    org.hibernate.orm.jdbc.bind: trace  # 쿼리 파라미터 값 확인
+    org.hibernate.SQL: debug           # 실행 쿼리 확인
 
 server:
   port: 8080
+
+settlement:
+  fee-rate: 0.20
+
+
+decorator:
+  datasource:
+    p6spy:
+      enable-logging: true
+      logging: slf4j
+      multiline: true
+

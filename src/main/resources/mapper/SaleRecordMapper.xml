@@ -23,10 +23,23 @@
         <if test="startAt !=null">
           AND s.paid_at &gt;= #{startAt}
         </if>
-        <if test="endAt !=null">
-          AND s.paid_at &lt;= #{endAt}
+        <if test="endAtExclusive !=null">
+          AND s.paid_at &lt; #{endAtExclusive}
         </if>
         ORDER BY s.paid_at
     </select>
+
+
+    <select id="aggregateByCreatorAndPeriod" resultType="com.min9359.creator_settlement_api.domain.SaleAggregation">
+        SELECT
+            COALESCE(SUM(s.amount), 0) AS total_amount,
+            COUNT(*) AS count
+        FROM sale_record s
+            JOIN course c ON s.course_id = c.id
+        WHERE c.creator_id = #{creatorId}
+          AND s.paid_at &gt;= #{startAt}
+          AND s.paid_at &lt; #{endAtExclusive}
+    </select>
+
 
 </mapper>
