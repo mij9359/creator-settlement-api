@@ -16,7 +16,7 @@
 3. resources 폴더 내의 data.sql에 포함된 샘플 데이터를 통해 즉시 API 테스트가 가능합니다.
 4. **H2 Console (데이터베이스 확인)**
     - 접속 주소: `http://localhost:8080/h2-console`
-    - **JDBC URL**: `jdbc:h2:mem:testdb` (또는 본인의 application.properties에 설정한 값)
+    - **JDBC URL**: `jdbc:h2:mem:settlement` (또는 본인의 application.properties에 설정한 값)
     - **User Name**: `sa`
     - **Password**: (없음, 빈칸)
     - 애플리케이션 실행 중 메모리 DB에 적재된 데이터를 직접 SQL로 조회할 수 있습니다.
