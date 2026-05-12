@@ -13,7 +13,6 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Schema(description = "")
 public class SaleAggregation {
     private BigDecimal totalAmount;
     private long count;

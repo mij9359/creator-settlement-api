@@ -28,6 +28,9 @@ public interface SettlementMapper {
     // 정산 결과 저장
     void insertSettlement(SettlementResponse settlement);
 
+    // PENDING 상태인 정산 내역의 집계 결과를 재계산하여 갱신
+    void updateSettlement(SettlementResponse settlement);
+
     // 특정 정산 건의 상태를 업데이트
     void updateStatus(@Param("id") Long id, @Param("status") String status);
 

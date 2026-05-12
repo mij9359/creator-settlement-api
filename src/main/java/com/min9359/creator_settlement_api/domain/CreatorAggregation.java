@@ -12,7 +12,6 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Schema(description = "")
 public class CreatorAggregation {
     private String creatorId;
     private String creatorName;

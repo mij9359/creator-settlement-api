@@ -1,21 +1,19 @@
 package com.min9359.creator_settlement_api.domain;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-
-import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Builder;
-import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 
 @Getter
+@Setter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Schema(description = "월별 정산 응답")
 public class SettlementResponse {
 
@@ -51,6 +49,6 @@ public class SettlementResponse {
     @Schema(description = "취소 건수", example = "2")
     private long cancelCount;
 
-    @Schema(description = "정산 상태", example = "PENDING")// (PENDING, CONFIRMED, PAID)
+    @Schema(description = "정산 상태 (PENDING, CONFIRMED, PAID)", example = "PENDING")
     private String status;
 }

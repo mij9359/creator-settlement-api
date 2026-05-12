@@ -1,5 +1,6 @@
 package com.min9359.creator_settlement_api.common;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -38,6 +39,17 @@ public class GlobalExceptionHandler {
                 "timestamp", LocalDateTime.now(),
                 "status", 400,
                 "error", "Bad Request",
+                "message", e.getMessage()
+        ));
+    }
+
+    // 상태 충돌 (정산 PENDING/CONFIRMED 상태 전이 위반 등)
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<Map<String, Object>> handleConflict(IllegalStateException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "timestamp", LocalDateTime.now(),
+                "status", 409,
+                "error", "Conflict",
                 "message", e.getMessage()
         ));
     }

@@ -65,6 +65,21 @@
         WHERE creator_id = #{creatorId} AND settlement_year_month = #{yearMonth}
     </select>
 
+    <!-- PENDING 정산 건의 집계 결과 갱신 (재계산 시 사용) -->
+    <update id="updateSettlement" parameterType="com.min9359.creator_settlement_api.domain.SettlementResponse">
+        UPDATE settlement
+        SET total_sales       = #{totalSales},
+            total_refunds     = #{totalRefunds},
+            net_sales         = #{netSales},
+            fee_rate          = #{feeRate},
+            fee_amount        = #{feeAmount},
+            settlement_amount = #{settlementAmount},
+            sale_count        = #{saleCount},
+            cancel_count      = #{cancelCount},
+            updated_at        = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
     <!-- 상태 업데이트 -->
     <update id="updateStatus">
         UPDATE settlement

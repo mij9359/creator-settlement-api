@@ -2,7 +2,6 @@ package com.min9359.creator_settlement_api.service;
 
 
 import com.min9359.creator_settlement_api.domain.*;
-import com.min9359.creator_settlement_api.dto.CancelRecordCreateRequest;
 import com.min9359.creator_settlement_api.mapper.CancelRecordMapper;
 import com.min9359.creator_settlement_api.mapper.CreatorMapper;
 import com.min9359.creator_settlement_api.mapper.SaleRecordMapper;
@@ -16,7 +15,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.Period;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
@@ -35,45 +33,45 @@ public class SettlementService {
 
     @Transactional
     public SettlementResponse calculateMonthly(String creatorId, YearMonth yearMonth) {
-        // 1. 이미 저장된 데이터가 있는지 먼저 확인 (중복 방지)
-        Optional<SettlementResponse> saved = settlementMapper.findSavedSettlement(creatorId, yearMonth.toString());
-        if (saved.isPresent()) {
-            return saved.get();
-        }
-
-        // 2. 크리에이터 존재 검증 (기존 로직)
+        // 1. 크리에이터 존재 검증
         creatorMapper.findById(creatorId)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "크리에이터를 찾을 수 없습니다: " + creatorId));
 
+        // 2. 저장된 정산이 있는지 확인
+        //    - CONFIRMED / PAID 는 변경 불가 스냅샷으로 간주 → 그대로 반환
+        //    - PENDING 또는 미존재 → 최신 데이터로 재계산
+        Optional<SettlementResponse> saved =
+                settlementMapper.findSavedSettlement(creatorId, yearMonth.toString());
+
+        if (saved.isPresent() && !"PENDING".equals(saved.get().getStatus())) {
+            return saved.get();
+        }
+
         // 3. 월 경계 계산
-        // 시작: 해당 월 1일 00:00:00
-        // 끝: 다음 달 1일 00:00:00 (배타적, exclusive)
-        // 명세는 "말일 23:59:59"이지만, 밀리초 단위 데이터까지 안전하게 포함하려면
-        // < 다음달_1일_00:00:00 방식이 표준. 결과는 동일하면서 더 안전.
+        // 시작: 해당 월 1일 00:00:00, 끝: 다음 달 1일 00:00:00 (배타적)
+        // "말일 23:59:59" 대신 exclusive end 로 처리해 밀리초 단위 데이터도 안전하게 포함.
         LocalDateTime startAt = yearMonth.atDay(1).atStartOfDay();
         LocalDateTime endAtExclusive = yearMonth.plusMonths(1).atDay(1).atStartOfDay();
 
-        // 4. 판매 집계
+        // 4. 판매/취소 집계
         SaleAggregation saleAgg = saleRecordMapper.aggregateByCreatorAndPeriod(
                 creatorId, startAt, endAtExclusive);
-
-        // 6. 환불 집계 (cancelled_at 기준)
         CancelAggregation cancelAgg = cancelRecordMapper.aggregateByCreatorAndPeriod(
                 creatorId, startAt, endAtExclusive);
 
-        // 금액 계산
+        // 5. 금액 계산
         BigDecimal totalSales = saleAgg.getTotalAmount();
         BigDecimal totalRefunds = cancelAgg.getTotalAmount();
         BigDecimal netSales = totalSales.subtract(totalRefunds);
 
-        // TODO: 과거 정산 내역 조회 시, 당시 적용되었던 수수료율 이력(History)을 조회하여 적용하도록 수정 필요
-        // 수수료는 원 단위 절사 (0.5원 같은 거 안 만들기 위해)
+        // TODO: 수수료율 이력 도입 시, 정산 대상 월 시점에 유효했던 fee_rate 를 조회해 적용
         BigDecimal feeAmount = netSales.multiply(feeRate)
                 .setScale(0, RoundingMode.DOWN);
         BigDecimal settlementAmount = netSales.subtract(feeAmount);
 
         SettlementResponse response = SettlementResponse.builder()
+                .id(saved.map(SettlementResponse::getId).orElse(null))
                 .creatorId(creatorId)
                 .yearMonth(yearMonth.toString())
                 .totalSales(totalSales)
@@ -87,8 +85,12 @@ public class SettlementService {
                 .status("PENDING")
                 .build();
 
-        // 7. DB에 저장
-        settlementMapper.insertSettlement(response);
+        // 6. PENDING 재계산이면 update, 신규면 insert
+        if (saved.isPresent()) {
+            settlementMapper.updateSettlement(response);
+        } else {
+            settlementMapper.insertSettlement(response);
+        }
 
         return response;
     }
