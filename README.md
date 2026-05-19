@@ -5,7 +5,7 @@
 
 ## 2. 기술 스택
 - Framework: Spring Boot 3.x (Java 17)
-- Database: H2 (In-memory)
+- Database: H2 (In-memory) — 평가자가 별도 DB 설치 없이 `./gradlew bootRun` 한 번으로 실행 가능하도록 의도적으로 선택
 - ORM/Mapper: MyBatis
 - Test: JUnit 5, Mockito, AssertJ
 - Documentation: Swagger (SpringDoc)
@@ -27,6 +27,7 @@
 - 수수료 및 절사: 순 판매 금액(판매-환불)의 20%를 수수료로 적용하며, 원 단위 미만은 버림(RoundingMode.DOWN) 처리하여 정산금 오차를 방지합니다.
 
 ## 5. 설계 결정과 이유
+- DB 선택 (H2 In-memory): 평가 환경의 진입 장벽을 최소화하기 위해 H2를 선택했습니다. `schema.sql`과 `data.sql`을 애플리케이션 기동 시 자동 적재하여, 평가자가 별도의 DB 설치·계정 설정 없이 `./gradlew bootRun` 한 번으로 즉시 API 테스트를 진행할 수 있도록 구성했습니다. 매 실행마다 동일한 초기 상태에서 시작하므로 테스트 결과의 재현성도 보장됩니다. 실 운영 환경에서는 MariaDB/MySQL로 전환할 수 있도록 MyBatis 표준 SQL 위주로 작성하였습니다.
 - 시간 범위 설계 (Exclusive End): 말일 23:59:59 데이터를 누락 없이 포함하기 위해 모든 조회 쿼리에서 이상(>=) 및 미만(<) 기준을 사용했습니다. 예를 들어 3월 정산 시 조회 종료 범위를 4월 1일 00:00:00 미만으로 설정하여 밀리초 단위 데이터까지 완벽하게 집계합니다.
 - 집계 쿼리 최적화: 운영자용 전체 집계 API 호출 시 발생하는 N+1 문제를 방지하기 위해, MyBatis 서브쿼리와 LEFT JOIN을 활용하여 단일 SQL 쿼리로 전체 크리에이터의 정산 현황을 한 번에 가져오도록 구현했습니다.
 - 금전 데이터 타입: 부동 소수점 오차를 방지하기 위해 모든 금액 필드에 BigDecimal 타입을 사용했습니다.
@@ -50,14 +51,14 @@
 
 ## BE 과제 선택 시 추가 항목:
 - 정산 확정(settlement) 상태 관리: PENDING → CONFIRMED → PAID
-  - 크리에이터 월별 정산 조회 및 생성 
-    - Endpoint: GET /api/settlements/creators/{creatorId}
-  - 정산 확정 (선택 구현 항목)
-    - Endpoint: PATCH /api/settlements/{id}/confirm
-  - 정산 지급 완료 (선택 구현 항목)
-    - Endpoint: PATCH /api/settlements/{id}/pay
-  - 운영자용 기간 내 전체 정산 현황 집계
-    - Endpoint: GET /api/settlements
+    - 크리에이터 월별 정산 조회 및 생성
+        - Endpoint: GET /api/settlements/creators/{creatorId}
+    - 정산 확정 (선택 구현 항목)
+        - Endpoint: PATCH /api/settlements/{id}/confirm
+    - 정산 지급 완료 (선택 구현 항목)
+        - Endpoint: PATCH /api/settlements/{id}/pay
+    - 운영자용 기간 내 전체 정산 현황 집계
+        - Endpoint: GET /api/settlements
 - 동일 기간 중복 정산 방지 로직
 
 
@@ -127,7 +128,7 @@ IDE에서 Run Test 또는 ./gradlew test 명령어로 실행할 수 있습니다
     - 선택 구현 사항인 '정산 확정' 기능 도입 시, 확정 시점의 수수료율을 별도의 정산 내역 테이블에 기록(Snapshot)하여 정책이 변경되더라도 이미 완료된 정산 금액은 변하지 않도록 설계할 예정입니다.
 
 
-### ERD 설명 
+### ERD 설명
 <p align="center">
   <img src="./database_erd.png" width="80%" alt="Database ERD">
 </p>
